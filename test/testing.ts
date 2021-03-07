@@ -1,6 +1,6 @@
 import { assert } from "chai";
 import * as H from "../src";
-import { Behavior, Stream, Now } from "../src";
+import { Behavior, Stream, Now, never, DelayStream } from "../src";
 import {
   testFuture,
   assertFutureEqual,
@@ -232,10 +232,10 @@ describe("testing", () => {
         assertStreamEqual(from3, { 4: 2, 6: 5, 7: 6 });
       });
     });
-    describe.skip("delay", () => {
+    describe("delay", () => {
       it("delays occurrences", () => {
         const s = testStreamFromObject({ 1: 1, 2: 1, 4: 2, 6: 3, 7: 1 });
-        const res = testNow(H.delay(3, s));
+        const res = testNow(H.delay(3, s), [new DelayStream(s, 3)]);
         assertStreamEqual(res, { 4: 1, 5: 1, 7: 2, 9: 3, 10: 1 });
       });
     });
@@ -245,7 +245,8 @@ describe("testing", () => {
           0: testFuture(1, "a"),
           2: testFuture(5, "b"),
           4: testFuture(2, "c"),
-          6: testFuture(7, "d")
+          6: testFuture(7, "d"),
+          8: never
         });
         const res = testNow(H.flatFutures(s), []);
         assert(H.isStream(res));

@@ -423,20 +423,22 @@ export function fromFunction<B>(f: (t: Time) => B): Behavior<B> {
 }
 
 /** @private */
-class SwitcherBehavior<A> extends ActiveBehavior<A>
+export class SwitcherBehavior<A> extends ActiveBehavior<A>
   implements BListener, SListener<Behavior<A>> {
-  private bNode: Node<this> = new Node(this);
-  private nNode: Node<this> = new Node(this);
+  private b: Behavior<A>;
+  private readonly bNode: Node<this> = new Node(this);
+  private readonly nNode: Node<this> = new Node(this);
   constructor(
-    private b: Behavior<A>,
-    next: Future<Behavior<A>> | Stream<Behavior<A>>,
-    t: Time
+    private readonly init: Behavior<A>,
+    private readonly next: Future<Behavior<A>> | Stream<Behavior<A>>,
+    private readonly t: Time
   ) {
     super();
-    this.parents = cons(b);
-    b.addListener(this.bNode, t);
-    this.state = b.state;
-    this.last = b.last;
+    this.b = this.init;
+    this.parents = cons(this.b);
+    this.b.addListener(this.bNode, t);
+    this.state = this.b.state;
+    this.last = this.b.last;
     next.addListener(this.nNode, t);
   }
   update(_t: Time): A {

@@ -292,6 +292,13 @@ describe("testing", () => {
         assertBehaviorEqual(mapped, { "-3": 9, 1: 1, 2: 4, "4.5": 20.25 });
       });
     });
+    describe("flatMap", () => {
+      it("has semantic representation", () => {
+        const b = testBehavior((t) => t * t);
+        const flatMapped = b.flatMap((n) => testBehavior((t) => t * n));
+        assertBehaviorEqual(flatMapped, { "-3": -27, 1: 1, 2: 8, "4.5": 91.125 });
+      });
+    })
     describe("mapTo", () => {
       it("creates constant function", () => {
         const b = testBehavior((_) => {

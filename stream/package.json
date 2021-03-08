@@ -1,0 +1,7 @@
+{
+  "name": "@funkia/hareactive/stream",
+  "private": true,
+  "main": "../dist/stream.js",
+  "module": "../dist/es/stream.js",
+  "types": "../dist/stream.d.ts"
+}

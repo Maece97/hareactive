@@ -1,0 +1,7 @@
+{
+  "name": "@funkia/hareactive/clock",
+  "private": true,
+  "main": "../dist/clock.js",
+  "module": "../dist/es/clock.js",
+  "types": "../dist/clock.d.ts"
+}

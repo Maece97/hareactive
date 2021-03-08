@@ -1,0 +1,7 @@
+{
+  "name": "@funkia/hareactive/behavior",
+  "private": true,
+  "main": "../dist/behavior.js",
+  "module": "../dist/es/behavior.js",
+  "types": "../dist/behavior.d.ts"
+}

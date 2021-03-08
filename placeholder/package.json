@@ -1,0 +1,7 @@
+{
+  "name": "@funkia/hareactive/placeholder",
+  "private": true,
+  "main": "../dist/placeholder.js",
+  "module": "../dist/es/placeholder.js",
+  "types": "../dist/placeholder.d.ts"
+}

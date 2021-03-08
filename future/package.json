@@ -1,0 +1,7 @@
+{
+  "name": "@funkia/hareactive/future",
+  "private": true,
+  "main": "../dist/future.js",
+  "module": "../dist/es/future.js",
+  "types": "../dist/future.d.ts"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "@funkia/hareactive/animation",
+  "private": true,
+  "main": "../dist/animation.js",
+  "module": "../dist/es/animation.js",
+  "types": "../dist/animation.d.ts"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "@funkia/hareactive/now",
+  "private": true,
+  "main": "../dist/now.js",
+  "module": "../dist/es/now.js",
+  "types": "../dist/now.d.ts"
+}

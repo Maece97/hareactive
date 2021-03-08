@@ -1,0 +1,7 @@
+{
+  "name": "@funkia/hareactive/dom",
+  "private": true,
+  "main": "../dist/dom.js",
+  "module": "../dist/es/dom.js",
+  "types": "../dist/dom.d.ts"
+}

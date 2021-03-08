@@ -1,0 +1,7 @@
+{
+  "name": "@funkia/hareactive/datastructures",
+  "private": true,
+  "main": "../dist/datastructures.js",
+  "module": "../dist/es/datastructures.js",
+  "types": "../dist/datastructures.d.ts"
+}

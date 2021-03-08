@@ -1,0 +1,7 @@
+{
+  "name": "@funkia/hareactive/common",
+  "private": true,
+  "main": "../dist/common.js",
+  "module": "../dist/es/common.js",
+  "types": "../dist/common.d.ts"
+}

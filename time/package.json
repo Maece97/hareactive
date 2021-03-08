@@ -1,0 +1,7 @@
+{
+  "name": "@funkia/hareactive/time",
+  "private": true,
+  "main": "../dist/time.js",
+  "module": "../dist/es/time.js",
+  "types": "../dist/time.d.ts"
+}

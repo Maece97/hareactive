@@ -10,13 +10,62 @@ import {
   assertStreamEqual,
   testBehavior,
   testNow,
-  assertBehaviorEqual
+  assertBehaviorEqual,
+  assertTimeEqual,
+  assertOccurrenceEqual
 } from "../src/testing";
 import { createRef, mutateRef } from "./helpers";
 import { fgo } from "@funkia/jabz";
 import { withEffects } from "@funkia/io";
+import { AssertionError } from "assert";
 
 describe("testing", () => {
+  describe("time", () => {
+    describe("assertTimeEqual", () => {
+      it("does not throw when equal", () => {
+        assertTimeEqual(0, 0);
+        assertTimeEqual(4, 4);
+      });
+      it("does throw when not equal", () => {
+        assert.throws(() => {
+          assertTimeEqual(3,4);
+        });
+      });
+      it("supports floating point time", () => {
+        assertTimeEqual(0.1 + 0.2 /* 0.30000000000000004 */, 0.3);
+        assertTimeEqual(1000000000.1 + 0.2 /* is 1000000000.3000001 */, 1000000000.3);
+      });
+    });
+  });
+  describe("occurrence", () => {
+    describe("assertTimeEqual", () => {
+      it("does not throw when equal", () => {
+        assertOccurrenceEqual({ time: 4, value: "a" }, { time: 4, value: "a" });
+      });
+      it("does throw when not equal", () => {
+        assert.throws(() => {
+          assertOccurrenceEqual({ time: 3, value: "a" }, { time: 4, value: "a" });
+        });
+        assert.throws(() => {
+          assertOccurrenceEqual({ time: 4, value: "b" }, { time: 4, value: "a" });
+        });
+      });
+      it("supports custom equal fn", () => {
+        const equalReverse = (a: any, b: string) => {
+          const reverseExpected = b.split("").reverse().join("");
+          if (a !== reverseExpected)
+            throw new AssertionError({
+              actual: a,
+              expected: reverseExpected,
+            });
+        }
+        assertOccurrenceEqual({ time: 4, value: "hello"}, { time: 4, value: "olleh" }, equalReverse);
+        assert.throws(() => {
+          assertOccurrenceEqual({ time: 4, value: "hell"}, { time: 4, value: "olleh" }, equalReverse);
+        });
+      });
+    });
+  });
   describe("future", () => {
     describe("assertFutureEqual", () => {
       it("does not throw when equal", () => {
@@ -106,6 +155,28 @@ describe("testing", () => {
     });
   });
   describe("stream", () => {
+    describe("assertStreamEqual", () => {
+      it("does not throw when equal", () => {
+        assertStreamEqual(testStreamFromObject({ 1: "a", 2: "b", 3: "c" }), testStreamFromObject({ 1: "a", 2: "b", 3: "c" }));
+        assertStreamEqual(testStreamFromObject({ 1: "a", 2: "b", 3: "c" }), { 1: "a", 2: "b", 3: "c" });
+        assertStreamEqual(testStreamFromObject({ 1: "a", 2: "b", 3: "c" }), [[1, "a"], [2, "b"], [3, "c"]]);
+      });
+      it("does not throw when equal (unordered)", () => {
+        assertStreamEqual(testStreamFromObject({ 2: "b", 1: "a", 3: "c" }), testStreamFromObject({ 3: "c", 1: "a", 2: "b" }));
+        assertStreamEqual(testStreamFromObject({ 2: "b", 1: "a", 3: "c" }), { 3: "c", 1: "a", 2: "b" });
+        assertStreamEqual(testStreamFromObject({ 2: "b", 1: "a", 3: "c" }), [[3, "c"], [1, "a"], [2, "b"]]);
+      });
+      it("throws when not equal", () => {
+        [
+          { 1: "a", 2: "b", 4: "c" },
+          { 1: "a", 2: "b", 3: "d" },
+          { 1: "a", 2: "b", 3: "c", 4: "d" },
+          { 1: "a", 2: "b" }
+        ].forEach((s) => assert.throws(() =>
+          assertStreamEqual(testStreamFromObject(s), { 1: "a", 2: "b", 3: "c" })
+        ));
+      });
+    });
     describe("test streams", () => {
       it("creates test stream with increasing times from array", () => {
         const s = testStreamFromArray([[0, 0], [1, 1], [2, 2], [3, 3]]);
@@ -425,7 +496,6 @@ describe("testing", () => {
         assert(H.isStream(out.res));
         assertStreamEqual(
           out.res,
-          // @ts-ignore
           testStreamFromObject({ 0: "old1", 1: "old2", 2: "response" })
         );
         assert.deepEqual(requests, []);

@@ -18,7 +18,8 @@ import {
   MapBehavior,
   AccumBehavior,
   FunctionBehavior,
-  ConstantBehavior
+  ConstantBehavior,
+  isBehavior
 } from "./behavior";
 import {
   Future,
@@ -29,7 +30,8 @@ import {
   OfFuture,
   LiftFuture,
   FlatMapFuture,
-  NextOccurrenceFuture
+  NextOccurrenceFuture,
+  isFuture
 } from "./future";
 import { Time } from "./common";
 import {
@@ -45,12 +47,30 @@ import {
 } from "./now";
 import { time, DelayStream } from "./time";
 
-// Future
+export function assertTimeEqual(actual: any, expected: Time): asserts actual is Time {
+  const tolerance = Number.EPSILON * Math.pow(2, Math.ceil(Math.log2(expected)));
+  if (typeof actual !== 'number' || Math.abs(actual - expected) > tolerance)
+    throw new assert.AssertionError({
+      actual: actual,
+      expected: expected,
+    });
+}
 
 export type Occurrence<A> = {
   time: Time;
   value: A;
 };
+
+export function assertOccurrenceEqual<A>(
+  actual: any,
+  expected: Occurrence<A>,
+  assertValueFn: (actual: any, expected: A) => asserts actual is A =  assert.deepStrictEqual
+): asserts actual is Occurrence<A> {
+  assertTimeEqual(actual.time, expected.time);
+  assertValueFn(actual.value, expected.value);
+}
+
+// Future
 
 declare module "./future" {
   interface Future<A> {
@@ -147,12 +167,22 @@ export function testFuture<A>(time: number, value: A): Future<A> {
 }
 
 export function assertFutureEqual<A>(
-  future1: Future<A>,
-  future2: Future<A>
-): void {
-  const a = future1.model();
-  const b = future2.model();
-  assert.deepEqual(a, b);
+  actual: any,
+  expected: Future<A>,
+  assertValueFn: (actual: any, expected: A) => asserts actual is A =  assert.deepStrictEqual
+): asserts actual is Future<A> {
+  if (isFuture(actual)) {
+    const am = actual.model();
+    const em = expected.model();
+    if (doesOccur(em))
+      return assertOccurrenceEqual(am, em, assertValueFn);
+    else if (!doesOccur(am)) // If b does not occur, a is expected to not occur, too
+      return;
+  }
+  throw new assert.AssertionError({
+    actual: actual,
+    expected: expected,
+  });
 }
 
 // Stream
@@ -288,24 +318,23 @@ export function testStreamFromObject<A>(object: Record<string, A>): Stream<A> {
   return new TestStream(semanticStream);
 }
 
-export function assertStreamEqual<A>(s1: Stream<A>, s2: Stream<A>): void;
 export function assertStreamEqual<A>(
-  s1: Stream<A>,
-  s2: {
-    [time: number]: A;
+  actual: any,
+  expected: Stream<A> | { [time: number]: A } | [Time, A][],
+  assertValueFn: (actual: any, expected: A) => asserts actual is A =  assert.deepStrictEqual
+): asserts actual is Stream<A> {
+  if (isStream(actual)) {
+    const am = actual.model().sort((a, b) => a.time - b.time);
+    const em = (isStream(expected) ? expected :
+      Array.isArray(expected) ? testStreamFromArray(expected) : testStreamFromObject(expected))
+      .model().sort((a, b) => a.time - b.time);
+    if (am.length === em.length)
+      return em.forEach((occ, i) => assertOccurrenceEqual(am[i], occ, assertValueFn));
   }
-): void;
-export function assertStreamEqual<A>(s1: Stream<A>, s2: ([Time, A])[]): void;
-export function assertStreamEqual<A>(
-  s1: Stream<A>,
-  s2: Stream<A> | ([Time, A])[]
-): void {
-  const s2_ = isStream(s2)
-    ? s2
-    : Array.isArray(s2)
-    ? testStreamFromArray(s2)
-    : testStreamFromObject(s2);
-  assert.deepEqual(s1.model(), s2_.model());
+  throw new assert.AssertionError({
+    actual: actual,
+    expected: expected,
+  });
 }
 
 // Behavior
@@ -370,15 +399,19 @@ export function testAt<A>(t: number, b: Behavior<A>): A {
 }
 
 export function assertBehaviorEqual<A>(
-  b1: Behavior<A>,
-  b2: {
-    [time: number]: A;
-  }
+  actual: any,
+  expected: { [time: number]: A },
+  assertValueFn: (actual: any, expected: A) => asserts actual is A =  assert.deepStrictEqual
 ): void {
-  const b = b1.model();
-  for (const [t, v] of Object.entries(b2)) {
-    assert.deepEqual(b(parseFloat(t)), v);
-  }
+  if (!isBehavior(actual))
+    throw new assert.AssertionError({
+      actual: actual,
+      expected: expected,
+    });
+  const am = actual.model();
+  Object.entries(expected).forEach(([t, v]) =>
+    assertValueFn(am(Number(t)), v)
+  );
 }
 
 // * Now

@@ -118,6 +118,10 @@ describe("testing", () => {
         assertFutureEqual(testAt(10, b), H.never);
       });
     });
+    describe("toString", () => {
+      const f = testFuture(3, "a");
+      expect(f.toString()).toBe("{3: \"a\"}");
+    });
   });
   describe("stream", () => {
     describe("test streams", () => {
@@ -278,6 +282,10 @@ describe("testing", () => {
           ])
         );
       });
+    });
+    describe("toString", () => {
+      const s = testStreamFromObject({ 1: 1, 2: "a", 4: 2, 6: {a: 1, b: 2}, 7: 1 });
+      expect(s.toString()).toBe("{1: 1, 2: \"a\", 4: 2, 6: {\"a\":1,\"b\":2}, 7: 1}");
     });
   });
   describe("behavior", () => {

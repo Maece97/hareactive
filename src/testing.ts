@@ -48,6 +48,11 @@ import { time, DelayStream } from "./time";
 
 // Future
 
+Future.prototype.toString = function() {
+  const model = this.model();
+  return `{${model.time}: ${JSON.stringify(model.value)}}`;
+}
+
 export type Occurrence<A> = {
   time: Time;
   value: A;
@@ -157,6 +162,11 @@ export function assertFutureEqual<A>(
 }
 
 // Stream
+
+Stream.prototype.toString = function() {
+  return `{${this.model().map((e: Occurrence<unknown>) => `${e.time}: ${JSON.stringify(e.value)}`).join(", ")}}`;
+	return JSON.stringify(this.model());
+}
 
 export type StreamModel<A> = Occurrence<A>[];
 

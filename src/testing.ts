@@ -15,6 +15,7 @@ import {
 } from "./stream";
 import {
   Behavior,
+  FlatMapBehavior,
   MapBehavior,
   AccumBehavior,
   FunctionBehavior,
@@ -321,6 +322,10 @@ declare module "./behavior" {
 MapBehavior.prototype.model = function() {
   const g = this.parent.model();
   return (t) => this.f(g(t));
+};
+
+FlatMapBehavior.prototype.model = function() {
+  return (t) => this.fn(this.outer.model()(t)).model()(t)
 };
 
 ConstantBehavior.prototype.model = function() {

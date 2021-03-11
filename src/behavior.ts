@@ -293,7 +293,7 @@ export class LiftBehavior<A extends unknown[], R> extends Behavior<R> {
   }
 }
 
-class FlatMapBehavior<A, B> extends Behavior<B> {
+export class FlatMapBehavior<A, B> extends Behavior<B> {
   // The last behavior returned by the chain function
   private innerB: Behavior<B>;
   private innerNode: Node<this> = new Node(this);

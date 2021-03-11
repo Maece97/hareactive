@@ -19,7 +19,8 @@ import {
   MapBehavior,
   AccumBehavior,
   FunctionBehavior,
-  ConstantBehavior
+  ConstantBehavior,
+  SwitcherBehavior
 } from "./behavior";
 import {
   Future,
@@ -45,6 +46,7 @@ import {
   InstantRun
 } from "./now";
 import { time, DelayStream } from "./time";
+import { nil } from "./datastructures";
 
 // Future
 
@@ -134,6 +136,7 @@ NextOccurrenceFuture.prototype.model = function<A>(
 class TestFuture<A> extends Future<A> {
   constructor(private semanticFuture: SemanticFuture<A>) {
     super();
+    this.parents = nil;
   }
   /* istanbul ignore next */
   pushS(_t: number, _val: A): void {
@@ -346,6 +349,24 @@ FunctionBehavior.prototype.model = function() {
   return (t: number) => this.f(t);
 };
 
+SwitcherBehavior.prototype.model = function() {
+  return (t) => {
+    if (isStream(this.next)) {
+      const behaviorModelAtT = (this.next.model() as Occurrence<Behavior<unknown>>[])
+        .reduce(
+          (o, p) => p.time >= o.time && p.time <= t && p.time >= this.t ? p : o,
+          { time: this.t, value: this.init }
+        )
+        .value;
+      return testAt(t, behaviorModelAtT);
+    }
+    else {
+      const futureModel: SemanticFuture<unknown> = this.next.model();
+      return testAt(t, doesOccur(futureModel) && futureModel.time <= t ? futureModel.value : this.init);
+    }
+  }
+}
+
 time.model = () => (t: Time) => t;
 
 AccumBehavior.prototype.model = function<A, B>(this: AccumBehavior<A, B>) {
@@ -362,6 +383,7 @@ AccumBehavior.prototype.model = function<A, B>(this: AccumBehavior<A, B>) {
 class TestBehavior<A> extends Behavior<A> {
   constructor(private semanticBehavior: BehaviorModel<A>) {
     super();
+    this.parents = nil;
   }
   /* istanbul ignore next */
   update(_t: number): A {

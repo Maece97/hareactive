@@ -330,6 +330,39 @@ describe("testing", () => {
         assertBehaviorEqual(mapped, { "-3": 7, 4: 7, 9: 7 });
       });
     });
+    describe("stepTo", () => {
+      it("has semantic representation", () => {
+        const f = testFuture(3, true);
+        const switched = H.stepTo(false, f);
+        assertBehaviorEqual(switched, { "-3": false, 1: false, 3: true, "4.5": true });
+      });
+    });
+    describe("switchTo", () => {
+      it("has semantic representation", () => {
+        const b = testBehavior((t) => t);
+        const fb = testFuture(3, testBehavior((t) => t * t));
+        const switched = H.switchTo(b, fb);
+        assertBehaviorEqual(switched, { "-3": -3, 2: 2, 3: 9, "4.5": 20.25 });
+      });
+    });
+    describe("switcherFrom", () => {
+      it("has semantic representation", () => {
+        const b0 = testBehavior((t) => t);
+        const b1 = testBehavior((t) => t * t);
+        const b2 = testBehavior((t) => t * t * t);
+        const sb = testStreamFromObject({
+          2: b1,
+          3.1: b2
+        });
+        const switched = H.switcherFrom(b0, sb);
+        [
+          { t: -3, b: { "-3": -3, 2: 4, 3: 9, "4.5": 91.125 } },
+          { t: 2, b: { "-3": -3, 2: 4, 3: 9, "4.5": 91.125 } },
+          { t: 3, b: { "-3": -3, 2: 2, 3: 3, "4.5": 91.125 } },
+          { t: 4.5, b: { "-3": -3, 2: 2, 3: 3, "4.5": 4.5 } },
+        ].forEach((t) => assertBehaviorEqual(testAt(t.t, switched), t.b));
+      });
+    });
     describe("scan", () => {
       it("accumulates state", () => {
         const s = testStreamFromObject({ 1: 1, 2: 1, 4: 2, 6: 3, 7: 1 });

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.flatFuturesLatest = exports.flatFuturesLatestFrom = exports.flatFuturesOrdered = exports.flatFuturesOrderedFrom = exports.flatFutures = exports.flatFuturesFrom = exports.format = exports.moment = exports.toggle = exports.toggleFrom = exports.stepper = exports.stepperFrom = exports.accumCombine = exports.accumCombineFrom = exports.accum = exports.accumFrom = exports.AccumBehavior = exports.freezeAt = exports.freezeAtFrom = exports.freezeTo = exports.switcher = exports.switcherFrom = exports.switchTo = exports.stepTo = exports.fromFunction = exports.FunctionBehavior = exports.ConstantBehavior = exports.ActiveBehavior = exports.snapshotAt = exports.when = exports.whenFrom = exports.LiftBehavior = exports.ap = exports.MapBehavior = exports.at = exports.sinkBehavior = exports.SinkBehavior = exports.producerBehavior = exports.ProducerBehavior = exports.isBehavior = exports.pushToChildren = exports.Behavior = void 0;
+exports.flatFuturesLatest = exports.flatFuturesLatestFrom = exports.flatFuturesOrdered = exports.flatFuturesOrderedFrom = exports.flatFutures = exports.flatFuturesFrom = exports.format = exports.moment = exports.toggle = exports.toggleFrom = exports.stepper = exports.stepperFrom = exports.accumCombine = exports.accumCombineFrom = exports.accum = exports.accumFrom = exports.AccumBehavior = exports.freezeAt = exports.freezeAtFrom = exports.freezeTo = exports.switcher = exports.switcherFrom = exports.switchTo = exports.stepTo = exports.SwitcherBehavior = exports.fromFunction = exports.FunctionBehavior = exports.ConstantBehavior = exports.ActiveBehavior = exports.snapshotAt = exports.when = exports.whenFrom = exports.FlatMapBehavior = exports.LiftBehavior = exports.ap = exports.MapBehavior = exports.at = exports.sinkBehavior = exports.SinkBehavior = exports.producerBehavior = exports.ProducerBehavior = exports.isBehavior = exports.pushToChildren = exports.Behavior = void 0;
 var tslib_1 = require("tslib");
 var datastructures_1 = require("./datastructures");
 var index_1 = require("./index");
@@ -367,6 +367,7 @@ var FlatMapBehavior = /** @class */ (function (_super) {
     };
     return FlatMapBehavior;
 }(Behavior));
+exports.FlatMapBehavior = FlatMapBehavior;
 /** @private */
 var WhenBehavior = /** @class */ (function (_super) {
     tslib_1.__extends(WhenBehavior, _super);
@@ -490,15 +491,18 @@ exports.fromFunction = fromFunction;
 /** @private */
 var SwitcherBehavior = /** @class */ (function (_super) {
     tslib_1.__extends(SwitcherBehavior, _super);
-    function SwitcherBehavior(b, next, t) {
+    function SwitcherBehavior(init, next, t) {
         var _this = _super.call(this) || this;
-        _this.b = b;
+        _this.init = init;
+        _this.next = next;
+        _this.t = t;
         _this.bNode = new datastructures_1.Node(_this);
         _this.nNode = new datastructures_1.Node(_this);
-        _this.parents = datastructures_1.cons(b);
-        b.addListener(_this.bNode, t);
-        _this.state = b.state;
-        _this.last = b.last;
+        _this.b = _this.init;
+        _this.parents = datastructures_1.cons(_this.b);
+        _this.b.addListener(_this.bNode, t);
+        _this.state = _this.b.state;
+        _this.last = _this.b.last;
         next.addListener(_this.nNode, t);
         return _this;
     }
@@ -524,6 +528,7 @@ var SwitcherBehavior = /** @class */ (function (_super) {
     };
     return SwitcherBehavior;
 }(ActiveBehavior));
+exports.SwitcherBehavior = SwitcherBehavior;
 /**
  * From an initial value and a future value, `stepTo` creates a new behavior
  * that has the initial value until `next` occurs, after which it has the value

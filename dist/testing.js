@@ -8,6 +8,12 @@ var behavior_1 = require("./behavior");
 var future_1 = require("./future");
 var now_1 = require("./now");
 var time_1 = require("./time");
+var datastructures_1 = require("./datastructures");
+// Future
+future_1.Future.prototype.toString = function () {
+    var model = this.model();
+    return "{" + model.time + ": " + JSON.stringify(model.value) + "}";
+};
 exports.neverOccurringFuture = {
     time: "infinity",
     value: undefined
@@ -66,6 +72,7 @@ var TestFuture = /** @class */ (function (_super) {
     function TestFuture(semanticFuture) {
         var _this = _super.call(this) || this;
         _this.semanticFuture = semanticFuture;
+        _this.parents = datastructures_1.nil;
         return _this;
     }
     /* istanbul ignore next */
@@ -91,6 +98,11 @@ function assertFutureEqual(future1, future2) {
     assert.deepEqual(a, b);
 }
 exports.assertFutureEqual = assertFutureEqual;
+// Stream
+stream_1.Stream.prototype.toString = function () {
+    return "{" + this.model().map(function (e) { return e.time + ": " + JSON.stringify(e.value); }).join(", ") + "}";
+    return JSON.stringify(this.model());
+};
 stream_1.MapStream.prototype.model = function () {
     var _this = this;
     var s = this.parent.model();
@@ -245,6 +257,10 @@ behavior_1.MapBehavior.prototype.model = function () {
     var g = this.parent.model();
     return function (t) { return _this.f(g(t)); };
 };
+behavior_1.FlatMapBehavior.prototype.model = function () {
+    var _this = this;
+    return function (t) { return _this.fn(_this.outer.model()(t)).model()(t); };
+};
 behavior_1.ConstantBehavior.prototype.model = function () {
     var _this = this;
     return function (_) { return _this.last; };
@@ -252,6 +268,21 @@ behavior_1.ConstantBehavior.prototype.model = function () {
 behavior_1.FunctionBehavior.prototype.model = function () {
     var _this = this;
     return function (t) { return _this.f(t); };
+};
+behavior_1.SwitcherBehavior.prototype.model = function () {
+    var _this = this;
+    return function (t) {
+        if (stream_1.isStream(_this.next)) {
+            var behaviorModelAtT = _this.next.model()
+                .reduce(function (o, p) { return p.time >= o.time && p.time <= t && p.time >= _this.t ? p : o; }, { time: _this.t, value: _this.init })
+                .value;
+            return testAt(t, behaviorModelAtT);
+        }
+        else {
+            var futureModel = _this.next.model();
+            return testAt(t, doesOccur(futureModel) && futureModel.time <= t ? futureModel.value : _this.init);
+        }
+    };
 };
 time_1.time.model = function () { return function (t) { return t; }; };
 behavior_1.AccumBehavior.prototype.model = function () {
@@ -274,6 +305,7 @@ var TestBehavior = /** @class */ (function (_super) {
     function TestBehavior(semanticBehavior) {
         var _this = _super.call(this) || this;
         _this.semanticBehavior = semanticBehavior;
+        _this.parents = datastructures_1.nil;
         return _this;
     }
     /* istanbul ignore next */

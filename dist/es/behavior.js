@@ -251,7 +251,7 @@ export class LiftBehavior extends Behavior {
         }
     }
 }
-class FlatMapBehavior extends Behavior {
+export class FlatMapBehavior extends Behavior {
     constructor(outer, fn) {
         super();
         this.outer = outer;
@@ -375,16 +375,19 @@ export function fromFunction(f) {
     return new FunctionBehavior(f);
 }
 /** @private */
-class SwitcherBehavior extends ActiveBehavior {
-    constructor(b, next, t) {
+export class SwitcherBehavior extends ActiveBehavior {
+    constructor(init, next, t) {
         super();
-        this.b = b;
+        this.init = init;
+        this.next = next;
+        this.t = t;
         this.bNode = new Node(this);
         this.nNode = new Node(this);
-        this.parents = cons(b);
-        b.addListener(this.bNode, t);
-        this.state = b.state;
-        this.last = b.last;
+        this.b = this.init;
+        this.parents = cons(this.b);
+        this.b.addListener(this.bNode, t);
+        this.state = this.b.state;
+        this.last = this.b.last;
         next.addListener(this.nNode, t);
     }
     update(_t) {

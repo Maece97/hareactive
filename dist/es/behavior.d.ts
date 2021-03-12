@@ -1,5 +1,5 @@
 import { DoubleLinkedList } from "./datastructures";
-import { State, Reactive, Time, BListener, Parent } from "./common";
+import { State, Reactive, Time, BListener, Parent, SListener } from "./common";
 import { Future } from "./future";
 import { Stream } from "./stream";
 import { Now } from "./now";
@@ -86,6 +86,14 @@ export declare class LiftBehavior<A extends unknown[], R> extends Behavior<R> {
     update(_t: number): R;
     changeStateDown(_: State): void;
 }
+export declare class FlatMapBehavior<A, B> extends Behavior<B> {
+    private outer;
+    private fn;
+    private innerB;
+    private innerNode;
+    constructor(outer: Behavior<A>, fn: (a: A) => Behavior<B>);
+    update(t: number): B;
+}
 export declare function whenFrom(b: Behavior<boolean>): Behavior<Future<{}>>;
 export declare function when(b: Behavior<boolean>): Now<Future<{}>>;
 export declare function snapshotAt<A>(b: Behavior<A>, f: Future<unknown>): Behavior<Future<A>>;
@@ -107,6 +115,20 @@ export declare class FunctionBehavior<A> extends ActiveBehavior<A> {
     update(t: Time): A;
 }
 export declare function fromFunction<B>(f: (t: Time) => B): Behavior<B>;
+/** @private */
+export declare class SwitcherBehavior<A> extends ActiveBehavior<A> implements BListener, SListener<Behavior<A>> {
+    private readonly init;
+    private readonly next;
+    private readonly t;
+    private b;
+    private readonly bNode;
+    private readonly nNode;
+    constructor(init: Behavior<A>, next: Future<Behavior<A>> | Stream<Behavior<A>>, t: Time);
+    update(_t: Time): A;
+    pushS(t: number, value: Behavior<A>): void;
+    private doSwitch;
+    changeStateDown(_: State): void;
+}
 /**
  * From an initial value and a future value, `stepTo` creates a new behavior
  * that has the initial value until `next` occurs, after which it has the value

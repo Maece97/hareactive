@@ -1,9 +1,15 @@
 import * as assert from "assert";
 import { Stream, MapStream, MapToStream, FilterStream, empty, ScanStream, CombineStream, SnapshotStream, isStream, FlatFutures, FlatFuturesOrdered, FlatFuturesLatest } from "./stream";
-import { Behavior, MapBehavior, AccumBehavior, FunctionBehavior, ConstantBehavior } from "./behavior";
+import { Behavior, FlatMapBehavior, MapBehavior, AccumBehavior, FunctionBehavior, ConstantBehavior, SwitcherBehavior } from "./behavior";
 import { Future, CombineFuture, NeverFuture, MapFuture, MapToFuture, OfFuture, LiftFuture, FlatMapFuture, NextOccurrenceFuture } from "./future";
 import { SampleNow, OfNow, FlatMapNow, PerformNow, PerformMapNow, MapNow, InstantNow } from "./now";
 import { time, DelayStream } from "./time";
+import { nil } from "./datastructures";
+// Future
+Future.prototype.toString = function () {
+    const model = this.model();
+    return `{${model.time}: ${JSON.stringify(model.value)}}`;
+};
 export const neverOccurringFuture = {
     time: "infinity",
     value: undefined
@@ -59,6 +65,7 @@ class TestFuture extends Future {
     constructor(semanticFuture) {
         super();
         this.semanticFuture = semanticFuture;
+        this.parents = nil;
     }
     /* istanbul ignore next */
     pushS(_t, _val) {
@@ -80,6 +87,11 @@ export function assertFutureEqual(future1, future2) {
     const b = future2.model();
     assert.deepEqual(a, b);
 }
+// Stream
+Stream.prototype.toString = function () {
+    return `{${this.model().map((e) => `${e.time}: ${JSON.stringify(e.value)}`).join(", ")}}`;
+    return JSON.stringify(this.model());
+};
 MapStream.prototype.model = function () {
     const s = this.parent.model();
     return s.map(({ time, value }) => ({ time, value: this.f(value) }));
@@ -202,11 +214,28 @@ MapBehavior.prototype.model = function () {
     const g = this.parent.model();
     return (t) => this.f(g(t));
 };
+FlatMapBehavior.prototype.model = function () {
+    return (t) => this.fn(this.outer.model()(t)).model()(t);
+};
 ConstantBehavior.prototype.model = function () {
     return (_) => this.last;
 };
 FunctionBehavior.prototype.model = function () {
     return (t) => this.f(t);
+};
+SwitcherBehavior.prototype.model = function () {
+    return (t) => {
+        if (isStream(this.next)) {
+            const behaviorModelAtT = this.next.model()
+                .reduce((o, p) => p.time >= o.time && p.time <= t && p.time >= this.t ? p : o, { time: this.t, value: this.init })
+                .value;
+            return testAt(t, behaviorModelAtT);
+        }
+        else {
+            const futureModel = this.next.model();
+            return testAt(t, doesOccur(futureModel) && futureModel.time <= t ? futureModel.value : this.init);
+        }
+    };
 };
 time.model = () => (t) => t;
 AccumBehavior.prototype.model = function () {
@@ -220,6 +249,7 @@ class TestBehavior extends Behavior {
     constructor(semanticBehavior) {
         super();
         this.semanticBehavior = semanticBehavior;
+        this.parents = nil;
     }
     /* istanbul ignore next */
     update(_t) {

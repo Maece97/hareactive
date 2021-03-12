@@ -15,10 +15,12 @@ import {
 } from "./stream";
 import {
   Behavior,
+  FlatMapBehavior,
   MapBehavior,
   AccumBehavior,
   FunctionBehavior,
-  ConstantBehavior
+  ConstantBehavior,
+  SwitcherBehavior
 } from "./behavior";
 import {
   Future,
@@ -44,8 +46,14 @@ import {
   InstantRun
 } from "./now";
 import { time, DelayStream } from "./time";
+import { nil } from "./datastructures";
 
 // Future
+
+Future.prototype.toString = function() {
+  const model = this.model();
+  return `{${model.time}: ${JSON.stringify(model.value)}}`;
+}
 
 export type Occurrence<A> = {
   time: Time;
@@ -128,6 +136,7 @@ NextOccurrenceFuture.prototype.model = function<A>(
 class TestFuture<A> extends Future<A> {
   constructor(private semanticFuture: SemanticFuture<A>) {
     super();
+    this.parents = nil;
   }
   /* istanbul ignore next */
   pushS(_t: number, _val: A): void {
@@ -156,6 +165,11 @@ export function assertFutureEqual<A>(
 }
 
 // Stream
+
+Stream.prototype.toString = function() {
+  return `{${this.model().map((e: Occurrence<unknown>) => `${e.time}: ${JSON.stringify(e.value)}`).join(", ")}}`;
+	return JSON.stringify(this.model());
+}
 
 export type StreamModel<A> = Occurrence<A>[];
 
@@ -323,6 +337,10 @@ MapBehavior.prototype.model = function() {
   return (t) => this.f(g(t));
 };
 
+FlatMapBehavior.prototype.model = function() {
+  return (t) => this.fn(this.outer.model()(t)).model()(t)
+};
+
 ConstantBehavior.prototype.model = function() {
   return (_) => this.last;
 };
@@ -330,6 +348,24 @@ ConstantBehavior.prototype.model = function() {
 FunctionBehavior.prototype.model = function() {
   return (t: number) => this.f(t);
 };
+
+SwitcherBehavior.prototype.model = function() {
+  return (t) => {
+    if (isStream(this.next)) {
+      const behaviorModelAtT = (this.next.model() as Occurrence<Behavior<unknown>>[])
+        .reduce(
+          (o, p) => p.time >= o.time && p.time <= t && p.time >= this.t ? p : o,
+          { time: this.t, value: this.init }
+        )
+        .value;
+      return testAt(t, behaviorModelAtT);
+    }
+    else {
+      const futureModel: SemanticFuture<unknown> = this.next.model();
+      return testAt(t, doesOccur(futureModel) && futureModel.time <= t ? futureModel.value : this.init);
+    }
+  }
+}
 
 time.model = () => (t: Time) => t;
 
@@ -347,6 +383,7 @@ AccumBehavior.prototype.model = function<A, B>(this: AccumBehavior<A, B>) {
 class TestBehavior<A> extends Behavior<A> {
   constructor(private semanticBehavior: BehaviorModel<A>) {
     super();
+    this.parents = nil;
   }
   /* istanbul ignore next */
   update(_t: number): A {
